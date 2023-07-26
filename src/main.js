@@ -3,6 +3,7 @@ import styles from './style.scss';
 const prompt = acode.require('prompt');
 const confirm = acode.require('confirm');
 const EditorFile = acode.require('EditorFile');
+const fs = acode.require('fsOperation');
 const { editor } = editorManager
 
 if (window.acode) {
@@ -41,7 +42,10 @@ function main() {
     name: "showBookmark",
     description: "Show Bookmark Panel",
     bindKey: { win: "Ctrl-b" },
-    exec: toggleBookmarkPanel,
+    exec: () => {
+      toggleBookmarkPanel();
+      checkDeletedFile();
+    },
   });
   
   document.head.append(style)
@@ -245,6 +249,25 @@ function gotoBookmark({ row, column, filename, uri }) {
       editor.gotoLine(+row + 1, +column, true);
       setTimeout(() => editor.focus(), 200)
       file.off("loadend", loadend);
+    }
+  }
+}
+
+
+/**
+ * Check Deleted File
+ **/ 
+
+async function checkDeletedFile() {
+  const bookmarkItems = bookmarksList.querySelectorAll("li") || []
+  const len = bookmarkItems.length
+  if (len <= 0) return
+  for (let i = 0; i < len; i++) {
+    const uri = bookmarkItems[i].dataset.uri
+    const isExists = await fs(uri).exists()
+    if (!isExists) {
+      bookmarkItems[i].remove()
+      updateLocalStorage()
     }
   }
 }
